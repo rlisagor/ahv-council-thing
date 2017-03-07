@@ -2,6 +2,9 @@
 
 const uuidv4 = require('uuid/v4');
 const request = require('request');
+const AWS = require('aws-sdk');
+
+const ses = new AWS.SES();
 
 module.exports.createLetter = (event, context, callback) => {
   let submission;
@@ -72,24 +75,51 @@ module.exports.approveLetter = (event, context, callback) => {
     return badRequest(callback, 'incorrect validation token');
   }
 
-  const msg = `:white_check_mark: Approved by <@${body.user.id}|${body.user.name}>`;
-  const response = {
-    'attachments': [
-      body.original_message.attachments[0],
-      {
-        fallback: msg,
-        color: 'good',
-        text: msg,
-        ts: Math.round(Date.now() / 1000)
-      }
-    ],
-    replace_original: true,
-    response_type: 'in_channel'
-  };
+  const emailAtt = body.original_message.attachments[0];
 
-  callback(null, {
-    statusCode: 200,
-    body: JSON.stringify(response)
+  function notifySlack() {
+    const approveMsg = `:white_check_mark: Approved by <@${body.user.id}|${body.user.name}>`;
+    const response = {
+      'attachments': [
+        emailAtt,
+        {
+          fallback: approveMsg,
+          color: 'good',
+          text: approveMsg,
+          ts: Math.round(Date.now() / 1000)
+        }
+      ],
+      replace_original: true,
+      response_type: 'in_channel'
+    };
+
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(response)
+    });
+  }
+
+  ses.sendEmail({
+    Source: process.env.SEND_FROM,
+    Destination: {
+      ToAddresses: [process.env.SEND_TO]
+    },
+    Message: {
+      Subject: {
+        Data: emailAtt.title
+      },
+      Body: {
+        Text: {
+          Data: emailAtt.text
+        }
+      }
+    }
+  }, (err, data) => {
+    if (err) {
+      return callback(err);
+    }
+
+    notifySlack();
   });
 };
 

@@ -5,6 +5,7 @@ const request = require('request');
 const AWS = require('aws-sdk');
 const Handlebars = require('handlebars');
 const he = require('he');
+const qs = require('qs');
 
 const ses = new AWS.SES();
 
@@ -12,12 +13,26 @@ const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
                                           {noEscape: true});
 
 module.exports.createLetter = (event, context, callback) => {
+  const contentType = (event.headers['content-type'] ||
+                       'application/x-www-form-urlencoded');
+
   let submission;
-  try {
-    submission = JSON.parse(event.body);
-  } catch (err) {
-    console.log(err);
-    return badRequest(callback, 'invalid request format');
+  if (contentType.match(/^application\/json\b/)) {
+    try {
+      submission = JSON.parse(event.body);
+    } catch (err) {
+      console.log(err);
+      return badRequest(callback, 'request is not valid JSON', true);
+    }
+  } else if (contentType.match(/^application\/x-www-form-urlencoded\b/)) {
+    try {
+      submission = qs.parse(event.body);
+    } catch(err) {
+      console.log(err);
+      return badRequest(callback, 'request is not a valid form-encoded string', true);
+    }
+  } else {
+    return badRequest(callback, 'unknown content type', true);
   }
 
   const submissionId = uuidv4();
@@ -60,6 +75,9 @@ module.exports.createLetter = (event, context, callback) => {
     } else {
       callback(null, {
         statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({
           id: submissionId
         }),
@@ -73,7 +91,7 @@ module.exports.approveLetter = (event, context, callback) => {
   try {
     body = JSON.parse(decodeURIComponent(event.body.substr(8).replace(/\+/g, ' ')));
   } catch (err) {
-    return badRequest(callback, 'invalid request format');;
+    return badRequest(callback, 'invalid request format');
   }
 
   if (body.token !== process.env.SLACK_VERIFICATION_TOKEN) {
@@ -140,11 +158,20 @@ module.exports.approveLetter = (event, context, callback) => {
   });
 };
 
-function badRequest(callback, message) {
+function badRequest(callback, message, cors) {
   const log = `Bad request: ${message}`;
   console.log(log);
-  callback(null, {
+
+  const result = {
     statusCode: 400,
     body: log
-  });
+  }
+
+  if (cors) {
+    result.headers = {
+      'Access-Control-Allow-Origin' : '*'
+    };
+  }
+
+  callback(null, result);
 }

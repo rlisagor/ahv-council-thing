@@ -6,11 +6,7 @@ provider:
 
   stage: dev
   region: us-west-2
-  environment:
-    SLACK_WEBHOOK_URL: ${file(env.dev.yml):slack_webhook_url}
-    SLACK_VERIFICATION_TOKEN: ${file(env.dev.yml):slack_verification_token}
-    SEND_FROM: ${file(env.dev.yml):send_from}
-    SEND_TO: ${file(env.dev.yml):send_to}
+  environment: ${file(env.dev.yml)}
 
   iamRoleStatements:
     - Effect: "Allow"

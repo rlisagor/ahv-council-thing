@@ -3,8 +3,13 @@
 const uuidv4 = require('uuid/v4');
 const request = require('request');
 const AWS = require('aws-sdk');
+const Handlebars = require('handlebars');
+const he = require('he');
 
 const ses = new AWS.SES();
+
+const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
+                                          {noEscape: true});
 
 module.exports.createLetter = (event, context, callback) => {
   let submission;
@@ -99,6 +104,17 @@ module.exports.approveLetter = (event, context, callback) => {
     });
   }
 
+  // Slack replaces various things with HTML elements, so we must convert it
+  // back for the email.
+  const tmplContext = {};
+  for (const k in emailAtt) {
+    if (typeof emailAtt[k] === 'string') {
+      tmplContext[k] = he.decode(emailAtt[k]);
+    } else {
+      tmplContext[k] = emailAtt[k];
+    }
+  }
+
   ses.sendEmail({
     Source: process.env.SEND_FROM,
     Destination: {
@@ -110,7 +126,8 @@ module.exports.approveLetter = (event, context, callback) => {
       },
       Body: {
         Text: {
-          Data: emailAtt.text
+          Data: EMAIL_TEMPLATE(tmplContext),
+          Charset: 'UTF-8'
         }
       }
     }

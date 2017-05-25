@@ -1,0 +1,48 @@
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('#ahv-mail-form').submit(function(event) {
+      var url = "..."; // INSERT URL OF submit FUNCTION HERE
+      var data = {};
+      var form = $(this);
+      form.serializeArray().forEach(function(field) {
+        data[field.name] = field.value;
+      });
+      
+      var button = $('#ahv-letter-submit');
+      button.prop('disabled', true)
+      button.text('Working...');
+      
+      $.post(url, data).done(function() {
+        form.html('<p><strong>Thank you for your submission!</strong></p>');
+      }).fail(function(err) {
+        console.log('fail', arguments);
+        button.prop('disabled', false);
+        button.text('Submit your comment');
+      });
+      event.preventDefault();
+    });
+  });
+</script>
+
+<!-- INSERT THE FOLLOWING FORM INTO DESIRED LOCATION IN NB TEMPLATE -->
+
+<div class="form">
+  <form method="post" id="ahv-mail-form">
+    <div class="row-fluid">
+      <div class="span5">
+        <label for="name">Your name</label>
+        <input type="text" name="name" class="text" />
+      </div>
+      <div class="span5 offset1">
+        <label for="email">Your email</label>
+        <input type="email" name="email" class="text" />
+      </div>
+    </div>
+    <label for="subject">Subject (e.g. address or name of the development)</label>
+    <input type="text" name="subject" class="text" />
+    <label for="content">Comments</label>
+    <textarea name="content"></textarea>
+    <button type="submit" id="ahv-letter-submit">Submit your comment</button>
+  </form>
+</div>
+</div>

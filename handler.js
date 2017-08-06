@@ -35,11 +35,16 @@ module.exports.createLetter = (event, context, callback) => {
     return badRequest(callback, 'unknown content type', true);
   }
 
+  let pretext = 'New submission:'
+  if (submission.join) {
+    pretext = `New submission + join:`
+  }
+
   const submissionId = uuidv4();
   const slackReq = {
     attachments: [
       {
-        pretext: 'New submission:',
+        pretext: pretext,
         title: submission.subject,
         author_name: `${submission.name} <${submission.email}>`,
         text: submission.content,

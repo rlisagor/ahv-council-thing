@@ -138,7 +138,7 @@ module.exports.approveLetter = (event, context, callback) => {
     }
   }
 
-  let sendTo = process.env.SEND_TO.split(/[,;]/).map(s => s.trim());
+  let sendTo = process.env.SEND_TO.split(/[,;\n]/).map(s => s.trim()).filter(s => s !== '');
   if (sendTo === 'author') {
     sendTo = [tmplContext.author_name];
   }

@@ -138,15 +138,15 @@ module.exports.approveLetter = (event, context, callback) => {
     }
   }
 
-  let sendTo = process.env.SEND_TO;
+  let sendTo = process.env.SEND_TO.split(/[,;]/).map(s => s.trim());
   if (sendTo === 'author') {
-    sendTo = tmplContext.author_name;
+    sendTo = [tmplContext.author_name];
   }
 
   ses.sendEmail({
     Source: process.env.SEND_FROM,
     Destination: {
-      ToAddresses: [sendTo]
+      ToAddresses: sendTo
     },
     Message: {
       Subject: {

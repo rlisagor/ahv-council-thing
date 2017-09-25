@@ -40,13 +40,18 @@ module.exports.createLetter = (event, context, callback) => {
     pretext = `New submission + join:`
   }
 
+  var name = submission.name;
+  if (!name) {
+    name = `${submission.first_name} ${submission.last_name}`;
+  }
+
   const submissionId = uuidv4();
   const slackReq = {
     attachments: [
       {
         pretext: pretext,
         title: submission.subject,
-        author_name: `${submission.name} <${submission.email}>`,
+        author_name: `${name} <${submission.email}>`,
         text: submission.content,
         ts: Math.round(Date.now() / 1000)
       },
@@ -142,6 +147,8 @@ module.exports.approveLetter = (event, context, callback) => {
   if (sendTo === 'author') {
     sendTo = [tmplContext.author_name];
   }
+
+  console.log(`Sending to ${sendTo}`);
 
   ses.sendEmail({
     Source: process.env.SEND_FROM,

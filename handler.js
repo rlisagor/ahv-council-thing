@@ -117,17 +117,22 @@ module.exports.approveLetter = (event, context, callback) => {
     return badRequest(callback, 'incorrect validation token');
   }
 
+  // Respond right away, will send update later via response_url
+  callback(null, {
+    statusCode: 200
+  });
+
   const emailAtt = body.original_message.attachments[0];
   const user = body.user;
 
   if (body.actions[0].name === 'approve') {
-    approve(callback, emailAtt, user);
+    approve(body.response_url, emailAtt, user);
   } else {
-    reject(callback, emailAtt, user);
+    reject(body.response_url, emailAtt, user);
   }
 };
 
-function approve(callback, emailAtt, user) {
+function approve(responseUrl, emailAtt, user) {
   // Slack replaces various things with HTML elements, so we must convert it
   // back for the email.
   const tmplContext = {};
@@ -165,20 +170,20 @@ function approve(callback, emailAtt, user) {
     }
   }, (err, data) => {
     if (err) {
-      return callback(err);
+      return errorToSlack(responseUrl, err);
     }
 
     const message = `:white_check_mark: Approved by <@${user.id}|${user.name}>`;
-    respondToSlack(callback, emailAtt, message, 'good');
+    respondToSlack(responseUrl, emailAtt, message, 'good');
   });
 }
 
-function reject(callback, emailAtt, user) {
+function reject(responseUrl, emailAtt, user) {
   const message = `:x: Rejected by <@${user.id}|${user.name}>`;
-  respondToSlack(callback, emailAtt, message, 'danger');
+  respondToSlack(responseUrl, emailAtt, message, 'danger');
 }
 
-function respondToSlack(callback, emailAtt, message, color) {
+function respondToSlack(responseUrl, emailAtt, message, color) {
   const response = {
     'attachments': [
       emailAtt,
@@ -193,9 +198,32 @@ function respondToSlack(callback, emailAtt, message, color) {
     response_type: 'in_channel'
   };
 
-  callback(null, {
-    statusCode: 200,
-    body: JSON.stringify(response)
+  request({
+    url: responseUrl,
+    body: response,
+    json: true,
+    method: 'POST'
+  }, (err, req, res) => {
+    if (err) {
+      console.error("Failed to respond to Slack: ", err);
+    }
+  });
+}
+
+function errorToSlack(responseUrl, err) {
+  request({
+    url: responseUrl,
+    body: {
+      "response_type": "ephemeral",
+      "replace_original": false,
+      "text": "Error: " + err.toString()
+    },
+    json: true,
+    method: 'POST'
+  }, (err, req, res) => {
+    if (err) {
+      console.error("Failed to send error to Slack: ", err);
+    }
   });
 }
 

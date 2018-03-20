@@ -150,7 +150,7 @@ module.exports.approveLetter = (event, context, callback) => {
 
   console.log(`Sending to ${sendTo}`);
 
-  ses.sendEmail({
+  let emailObj = {
     Source: process.env.SEND_FROM,
     Destination: {
       ToAddresses: sendTo
@@ -166,13 +166,18 @@ module.exports.approveLetter = (event, context, callback) => {
         }
       }
     }
-  }, (err, data) => {
-    if (err) {
-      return callback(err);
-    }
+  }
 
-    notifySlack();
-  });
+  console.log('email body : ' + JSON.stringify(emailObj));
+
+  ses.sendEmail(emailObj,
+    (err, data) => {
+      if (err) {
+        return callback(err);
+      }
+  
+      notifySlack();
+    });
 };
 
 function badRequest(callback, message, cors) {

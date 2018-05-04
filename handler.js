@@ -69,6 +69,15 @@ module.exports.createLetter = (event, context, callback) => {
             ok_text: 'Yes',
             dismiss_text: 'Not right now'
           }
+        }, {
+          name: 'reject',
+          text: 'Reject',
+          type: 'button',
+          confirm: {
+            text: 'Are you sure you want to reject this message?',
+            ok_text: 'Yes',
+            dismiss_text: 'Not right now'
+          }
         }]
       }
     ],
@@ -108,30 +117,22 @@ module.exports.approveLetter = (event, context, callback) => {
     return badRequest(callback, 'incorrect validation token');
   }
 
+  // Respond right away, will send update later via response_url
+  callback(null, {
+    statusCode: 200
+  });
+
   const emailAtt = body.original_message.attachments[0];
+  const user = body.user;
 
-  function notifySlack() {
-    const approveMsg = `:white_check_mark: Approved by <@${body.user.id}|${body.user.name}>`;
-    const response = {
-      'attachments': [
-        emailAtt,
-        {
-          fallback: approveMsg,
-          color: 'good',
-          text: approveMsg,
-          ts: Math.round(Date.now() / 1000)
-        }
-      ],
-      replace_original: true,
-      response_type: 'in_channel'
-    };
-
-    callback(null, {
-      statusCode: 200,
-      body: JSON.stringify(response)
-    });
+  if (body.actions[0].name === 'approve') {
+    approve(body.response_url, emailAtt, user);
+  } else {
+    reject(body.response_url, emailAtt, user);
   }
+};
 
+function approve(responseUrl, emailAtt, user) {
   // Slack replaces various things with HTML elements, so we must convert it
   // back for the email.
   const tmplContext = {};
@@ -144,7 +145,8 @@ module.exports.approveLetter = (event, context, callback) => {
   }
 
   let sendTo = process.env.SEND_TO.split(/[,;\n]/).map(s => s.trim()).filter(s => s !== '');
-  if (sendTo === 'author') {
+
+  if (sendTo.length === 1 && sendTo[0] === 'author') {
     sendTo = [tmplContext.author_name];
   }
 
@@ -168,12 +170,62 @@ module.exports.approveLetter = (event, context, callback) => {
     }
   }, (err, data) => {
     if (err) {
-      return callback(err);
+      return errorToSlack(responseUrl, err);
     }
 
-    notifySlack();
+    const message = `:white_check_mark: Approved by <@${user.id}|${user.name}>`;
+    respondToSlack(responseUrl, emailAtt, message, 'good');
   });
-};
+}
+
+function reject(responseUrl, emailAtt, user) {
+  const message = `:x: Rejected by <@${user.id}|${user.name}>`;
+  respondToSlack(responseUrl, emailAtt, message, 'danger');
+}
+
+function respondToSlack(responseUrl, emailAtt, message, color) {
+  const response = {
+    'attachments': [
+      emailAtt,
+      {
+        fallback: message,
+        color: color,
+        text: message,
+        ts: Math.round(Date.now() / 1000)
+      }
+    ],
+    replace_original: true,
+    response_type: 'in_channel'
+  };
+
+  request({
+    url: responseUrl,
+    body: response,
+    json: true,
+    method: 'POST'
+  }, (err, req, res) => {
+    if (err) {
+      console.error("Failed to respond to Slack: ", err);
+    }
+  });
+}
+
+function errorToSlack(responseUrl, err) {
+  request({
+    url: responseUrl,
+    body: {
+      "response_type": "ephemeral",
+      "replace_original": false,
+      "text": "Error: " + err.toString()
+    },
+    json: true,
+    method: 'POST'
+  }, (err, req, res) => {
+    if (err) {
+      console.error("Failed to send error to Slack: ", err);
+    }
+  });
+}
 
 function badRequest(callback, message, cors) {
   const log = `Bad request: ${message}`;

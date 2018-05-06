@@ -157,6 +157,7 @@ function approve(responseUrl, emailAtt, user) {
     Destination: {
       ToAddresses: sendTo
     },
+    ReplyToAddresses: [tmplContext.author_name],
     Message: {
       Subject: {
         Data: emailAtt.title

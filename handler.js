@@ -156,14 +156,8 @@ function approve(responseUrl, emailAtt, user) {
     }
   }
 
-  let sendTo = process.env.DEFAULT_SEND_TO.split(/[,;\n]/).map(s => s.trim()).filter(s => s !== '');
-
-  if (emailAtt.fields) {
-    const recipientFields = emailAtt.fields.filter(f => f.title === 'Recipients');
-    if (recipientFields) {
-      sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => slackHelper.extractEmailAddress(e));
-    }
-  }
+  const recipientFields = emailAtt.fields.filter(f => f.title === 'Recipients');
+  let sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => slackHelper.extractEmailAddress(e));
 
   if (sendTo.length === 1 && sendTo[0] === 'author') {
     sendTo = [tmplContext.author_name];

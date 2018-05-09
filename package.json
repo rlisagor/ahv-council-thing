@@ -2,6 +2,9 @@
   "name": "ahv-mailer",
   "version": "1.0.0",
   "main": "handler.js",
+  "scripts": {
+    "test": "mocha"
+  },
   "dependencies": {
     "handlebars": "^4.0.6",
     "he": "^1.1.1",
@@ -9,7 +12,9 @@
     "request": "^2.80.0",
     "uuid": "^3.0.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "mocha": "^5.1.1"
+  },
   "author": "Roman Lisagor <rlisagor@gmail.com>",
   "license": "MIT"
 }

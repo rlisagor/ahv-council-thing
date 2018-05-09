@@ -1,7 +1,9 @@
+// @ts-check
 'use strict';
 
 const uuidv4 = require('uuid/v4');
 const request = require('request');
+// @ts-ignore aws-sdk is already installed on AWS. Not installing locally to keep the buidl artifacts small
 const AWS = require('aws-sdk');
 const Handlebars = require('handlebars');
 const he = require('he');

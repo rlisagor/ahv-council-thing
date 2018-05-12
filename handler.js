@@ -2,19 +2,22 @@
 
 const uuidv4 = require('uuid/v4');
 const request = require('request');
+// @ts-ignore aws-sdk is already installed on AWS. Not installing locally to keep the build artifacts small
 const AWS = require('aws-sdk');
 const Handlebars = require('handlebars');
 const he = require('he');
 const qs = require('qs');
+const slackHelper = require('./slack-helper');
 
 const ses = new AWS.SES();
 
 const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
-                                          {noEscape: true});
+  {noEscape: true});
+const EMAIL_SEPARATOR = ', ';
 
 module.exports.createLetter = (event, context, callback) => {
   const contentType = (event.headers['content-type'] ||
-                       'application/x-www-form-urlencoded');
+    'application/x-www-form-urlencoded');
 
   let submission;
   if (contentType.match(/^application\/json\b/)) {
@@ -27,7 +30,7 @@ module.exports.createLetter = (event, context, callback) => {
   } else if (contentType.match(/^application\/x-www-form-urlencoded\b/)) {
     try {
       submission = qs.parse(event.body);
-    } catch(err) {
+    } catch (err) {
       console.log(err);
       return badRequest(callback, 'request is not a valid form-encoded string', true);
     }
@@ -82,6 +85,16 @@ module.exports.createLetter = (event, context, callback) => {
       }
     ],
   };
+
+  if (submission.recipients) {
+    slackReq.attachments[0].fields = [
+      {
+        title: 'Recipients',
+        value: submission.recipients.join(EMAIL_SEPARATOR),
+        short: false
+      }
+    ];
+  }
 
   request({
     url: process.env.SLACK_WEBHOOK_URL,
@@ -144,7 +157,8 @@ function approve(responseUrl, emailAtt, user) {
     }
   }
 
-  let sendTo = process.env.SEND_TO.split(/[,;\n]/).map(s => s.trim()).filter(s => s !== '');
+  const recipientFields = emailAtt.fields.filter(f => f.title === 'Recipients');
+  let sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => slackHelper.extractEmailAddress(e));
 
   if (sendTo.length === 1 && sendTo[0] === 'author') {
     sendTo = [tmplContext.author_name];
@@ -239,7 +253,7 @@ function badRequest(callback, message, cors) {
 
   if (cors) {
     result.headers = {
-      'Access-Control-Allow-Origin' : '*'
+      'Access-Control-Allow-Origin': '*'
     };
   }
 

@@ -2,3 +2,4 @@ node_modules/
 .serverless/
 env.*.yml
 !env.example.yml
+TestData/*.json

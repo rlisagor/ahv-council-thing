@@ -7,7 +7,8 @@ const AWS = require('aws-sdk');
 const Handlebars = require('handlebars');
 const he = require('he');
 const qs = require('qs');
-const slackHelper = require('./slack-helper');
+const helper = require('./helper');
+const nationBuilder = require('./nationbuilder');
 
 const ses = new AWS.SES();
 
@@ -38,21 +39,36 @@ module.exports.createLetter = async (event) => {
     return badRequest('unknown content type', true);
   }
 
-  let pretext = 'New submission:';
-  if (submission.join) {
-    pretext = 'New submission + join:';
+  var name, lastName, firstName;
+  if (submission.name) {
+    name = submission.name;
+    [firstName, lastName] = helper.splitFullName(name);
+  } else {
+    name = `${submission.first_name} ${submission.last_name}`;
+    firstName = submission.first_name;
+    lastName = submission.last_name;
   }
 
-  var name = submission.name;
-  if (!name) {
-    name = `${submission.first_name} ${submission.last_name}`;
+  var nbStatus = 'No';
+  if (submission.join) {
+    try {
+      await nationBuilder.registerPerson({
+        first_name: firstName,
+        last_name: lastName,
+        email: submission.email,
+      });
+      nbStatus = 'Yes';
+    } catch (err) {
+      console.error('Failed to register person with NationBuilder:',  err);
+      nbStatus = 'Tried, but failed (see logs)';
+    }
   }
 
   const submissionId = uuidv4();
   const slackReq = {
     attachments: [
       {
-        pretext: pretext,
+        pretext: 'New submission',
         title: submission.subject,
         author_name: `${name} <${submission.email}>`,
         text: submission.content,
@@ -86,14 +102,22 @@ module.exports.createLetter = async (event) => {
     ],
   };
 
+  slackReq.attachments[0].fields = [
+    {
+      title: 'Registered w/ NationBuilder',
+      value: nbStatus,
+      short: false,
+    }
+  ];
+
   if (submission.recipients) {
-    slackReq.attachments[0].fields = [
+    slackReq.attachments[0].fields.push([
       {
         title: 'Recipients',
         value: submission.recipients.join(EMAIL_SEPARATOR),
         short: false
       }
-    ];
+    ]);
   }
 
   await request({
@@ -154,7 +178,7 @@ async function approve(responseUrl, emailAtt, user) {
   }
 
   const recipientFields = emailAtt.fields.filter(f => f.title === 'Recipients');
-  let sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => slackHelper.extractEmailAddress(e));
+  let sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => helper.extractEmailAddress(e));
 
   if (sendTo.length === 1 && sendTo[0] === 'author') {
     sendTo = [tmplContext.author_name];

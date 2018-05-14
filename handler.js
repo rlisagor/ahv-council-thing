@@ -15,7 +15,7 @@ const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
   {noEscape: true});
 const EMAIL_SEPARATOR = ', ';
 
-module.exports.createLetter = (event, context, callback) => {
+module.exports.createLetter = (event, _context, callback) => {
   const contentType = (event.headers['content-type'] ||
     'application/x-www-form-urlencoded');
 
@@ -38,9 +38,9 @@ module.exports.createLetter = (event, context, callback) => {
     return badRequest(callback, 'unknown content type', true);
   }
 
-  let pretext = 'New submission:'
+  let pretext = 'New submission:';
   if (submission.join) {
-    pretext = `New submission + join:`
+    pretext = 'New submission + join:';
   }
 
   var name = submission.name;
@@ -101,7 +101,7 @@ module.exports.createLetter = (event, context, callback) => {
     body: slackReq,
     json: true,
     method: 'POST'
-  }, (err, req, res) => {
+  }, (err, _req, _res) => {
     if (err) {
       callback(err);
     } else {
@@ -118,7 +118,7 @@ module.exports.createLetter = (event, context, callback) => {
   });
 };
 
-module.exports.approveLetter = (event, context, callback) => {
+module.exports.approveLetter = (event, _context, callback) => {
   let body;
   try {
     body = JSON.parse(decodeURIComponent(event.body.substr(8).replace(/\+/g, ' ')));
@@ -183,7 +183,7 @@ function approve(responseUrl, emailAtt, user) {
         }
       }
     }
-  }, (err, data) => {
+  }, (err, _data) => {
     if (err) {
       return errorToSlack(responseUrl, err);
     }
@@ -218,9 +218,9 @@ function respondToSlack(responseUrl, emailAtt, message, color) {
     body: response,
     json: true,
     method: 'POST'
-  }, (err, req, res) => {
+  }, (err, _req, _res) => {
     if (err) {
-      console.error("Failed to respond to Slack: ", err);
+      console.error('Failed to respond to Slack: ', err);
     }
   });
 }
@@ -229,15 +229,15 @@ function errorToSlack(responseUrl, err) {
   request({
     url: responseUrl,
     body: {
-      "response_type": "ephemeral",
-      "replace_original": false,
-      "text": "Error: " + err.toString()
+      'response_type': 'ephemeral',
+      'replace_original': false,
+      'text': 'Error: ' + err.toString()
     },
     json: true,
     method: 'POST'
-  }, (err, req, res) => {
+  }, (err, _req, _res) => {
     if (err) {
-      console.error("Failed to send error to Slack: ", err);
+      console.error('Failed to send error to Slack: ', err);
     }
   });
 }
@@ -249,7 +249,7 @@ function badRequest(callback, message, cors) {
   const result = {
     statusCode: 400,
     body: log
-  }
+  };
 
   if (cors) {
     result.headers = {

@@ -1,11 +1,12 @@
 var assert = require('assert');
-var slackHelper = require('./slack-helper');
+var helper = require('./helper');
 
-function compareExpectedAndActual(input, expected) {
-  assert.equal(slackHelper.extractEmailAddress(input), expected);
-}
 
-describe('slackHelper.extractEmailAddress()', function () {
+describe('helper.extractEmailAddress()', function () {
+  let compareExpectedAndActual = (input, expected) => {
+    assert.equal(helper.extractEmailAddress(input), expected);
+  };
+
   describe('wrapped', function () {
     it('should work when Slack wraps addresses in a <mailto:>', function () {
       compareExpectedAndActual('<mailto:john.smith@icloud.com|john.smith@icloud.com>', 'john.smith@icloud.com');
@@ -32,3 +33,32 @@ describe('slackHelper.extractEmailAddress()', function () {
     });
   });
 });
+
+describe('helper.splitFullName()', () => {
+  let compareExpectedAndActual = (input, expected) => {
+    assert.deepEqual(helper.splitFullName(input), expected);
+  };
+
+  it('should properly split <first last>', () => {
+    compareExpectedAndActual('first last', ['first', 'last']);
+  });
+  it('should properly split <first middle last>', () => {
+    compareExpectedAndActual('first middle last', ['first middle', 'last']);
+  });
+  it('should properly split <first middle1 middle2 last>', () => {
+    compareExpectedAndActual('first middle1 middle2 last', ['first middle1 middle2', 'last']);
+  });
+  it('should properly split <onename>', () => {
+    compareExpectedAndActual('onename', ['onename', '']);
+  });
+  it('should properly split <i. lastname>', () => {
+    compareExpectedAndActual('i. lastname', ['i', 'lastname']);
+  });
+  it('should properly split <a.b.lastname>', () => {
+    compareExpectedAndActual('a.b.lastname', ['a b', 'lastname']);
+  });
+  it('should properly split names with non-latin characters', () => {
+    compareExpectedAndActual('Крокодил О. Гена', ['Крокодил О', 'Гена']);
+  });
+});
+

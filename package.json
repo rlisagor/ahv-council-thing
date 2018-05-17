@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "handler.js",
   "scripts": {
+    "lint": "eslint *.js",
     "test": "mocha"
   },
   "dependencies": {
@@ -10,9 +11,11 @@
     "he": "^1.1.1",
     "qs": "^6.4.0",
     "request": "^2.80.0",
+    "request-promise-native": "^1.0.5",
     "uuid": "^3.0.1"
   },
   "devDependencies": {
+    "eslint": "^4.19.1",
     "mocha": "^5.1.1"
   },
   "author": "Roman Lisagor <rlisagor@gmail.com>",

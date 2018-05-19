@@ -111,13 +111,11 @@ module.exports.createLetter = async (event) => {
   ];
 
   if (submission.recipients) {
-    slackReq.attachments[0].fields.push([
-      {
-        title: 'Recipients',
-        value: submission.recipients.join(EMAIL_SEPARATOR),
-        short: false
-      }
-    ]);
+    slackReq.attachments[0].fields.push({
+      title: 'Recipients',
+      value: submission.recipients.join(EMAIL_SEPARATOR),
+      short: false
+    });
   }
 
   await request({

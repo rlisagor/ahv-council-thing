@@ -11,8 +11,6 @@ const fs = require('fs');
 const uuid = require('uuid');
 let wrapped = mochaPlugin.getWrapper('createLetter', '/handler.js', 'createLetter');
 
-//let validJsonBody = {"name":"Test McTesterson","email":"test@test.com","subject":"Comments regarding 1234 Abundant Avenue","content":"To whom it may concern:\n\nThis is just a short note to express my support for 1234 Abundant Avenue. The project is near my work in West Point Grey. \n\nThis project deserves to be approved for the reasons listed below:\n- Central, walkable neighbourhoods like this are the best places to build more homes\n- We desperately need more rental homes in Vancouver\n\n1234 Abundant Avenue deserves to be approved, but some things could be improved:\n- I would like the project to have more family-sized units\n- It's disappointing that a project like this requires a rezoning\n\nSincerely yours,\nTest McTesterson\n4567 Fake Street, Vancouver. V5T 0A1 ","join":false,"recipients":["reilly.wood@icloud.com","reilly.p.wood@gmail.com"]}
-
 function readJsonFile(fileName) {
   let rawdata = fs.readFileSync(fileName);  
   return JSON.parse(rawdata.toString());  

@@ -30,7 +30,7 @@ describe('createLetter', () => {
     const mockCurrentTime = new Date(2018,1,1);
     var event = { 
       headers: { "content-type": "application/json" }, 
-      body: readTextFile('test/createLetterValidInputBody.json')
+      body: readTextFile('test/data/createLetterValidInputBody.json')
     }
 
     const requestStub = sinon.stub(request, 'post').resolves();
@@ -48,7 +48,7 @@ describe('createLetter', () => {
       console.log(requestParam.body);
       
       var parsedBody = requestParam.body;
-      var expectedBody = readJsonFile('test/createLetterExpectedRequestBody.json');
+      var expectedBody = readJsonFile('test/data/createLetterExpectedRequestBody.json');
 
       expect(parsedBody).to.deep.equal(expectedBody);
       

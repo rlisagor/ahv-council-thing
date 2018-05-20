@@ -4,7 +4,8 @@
   "main": "handler.js",
   "scripts": {
     "lint": "eslint *.js",
-    "test": "mocha"
+    "test": "sls invoke test -s dev",
+    "unit-tests-only": "mocha test/unitTests.js"
   },
   "dependencies": {
     "handlebars": "^4.0.6",

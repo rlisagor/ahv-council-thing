@@ -16,7 +16,9 @@
   },
   "devDependencies": {
     "eslint": "^4.19.1",
-    "mocha": "^5.1.1"
+    "mocha": "^5.1.1",
+    "serverless-mocha-plugin": "^1.8.3",
+    "sinon": "^5.0.7"
   },
   "author": "Roman Lisagor <rlisagor@gmail.com>",
   "license": "MIT"

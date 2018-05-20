@@ -31,3 +31,5 @@ functions:
           path: approve
           method: post
           private: false
+plugins:
+  - serverless-mocha-plugin

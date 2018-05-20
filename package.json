@@ -4,7 +4,8 @@
   "main": "handler.js",
   "scripts": {
     "lint": "eslint *.js",
-    "test": "mocha"
+    "test": "sls invoke test -s dev",
+    "unit-tests-only": "mocha test/unitTests.js"
   },
   "dependencies": {
     "handlebars": "^4.0.6",
@@ -15,8 +16,11 @@
     "uuid": "^3.0.1"
   },
   "devDependencies": {
+    "aws-sdk-mock": "^2.0.0",
     "eslint": "^4.19.1",
-    "mocha": "^5.1.1"
+    "mocha": "^5.1.1",
+    "serverless-mocha-plugin": "^1.8.3",
+    "sinon": "^5.0.7"
   },
   "author": "Roman Lisagor <rlisagor@gmail.com>",
   "license": "MIT"

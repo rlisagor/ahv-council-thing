@@ -1,6 +1,6 @@
 'use strict';
 
-const uuidv4 = require('uuid/v4');
+const uuid = require('uuid');
 const request = require('request-promise-native');
 // @ts-ignore aws-sdk is already installed on AWS. Not installing locally to keep the build artifacts small
 const AWS = require('aws-sdk');
@@ -10,8 +10,6 @@ const qs = require('qs');
 const helper = require('./helper');
 const nationBuilder = require('./nationbuilder');
 
-const ses = new AWS.SES();
-
 const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
   {noEscape: true});
 const EMAIL_SEPARATOR = ', ';
@@ -19,7 +17,6 @@ const EMAIL_SEPARATOR = ', ';
 module.exports.createLetter = async (event) => {
   const contentType = (event.headers['content-type'] ||
     'application/x-www-form-urlencoded');
-
   let submission;
   if (contentType.match(/^application\/json\b/)) {
     try {
@@ -64,7 +61,7 @@ module.exports.createLetter = async (event) => {
     }
   }
 
-  const submissionId = uuidv4();
+  const submissionId = uuid.v4();
   const slackReq = {
     attachments: [
       {
@@ -118,11 +115,10 @@ module.exports.createLetter = async (event) => {
     });
   }
 
-  await request({
+  await request.post({
     url: process.env.SLACK_WEBHOOK_URL,
     body: slackReq,
-    json: true,
-    method: 'POST'
+    json: true
   });
 
   return {
@@ -155,7 +151,7 @@ module.exports.approveLetter = (event, _context, callback) => {
 
   const emailAtt = body.original_message.attachments[0];
   const user = body.user;
-
+  
   if (body.actions[0].name === 'approve') {
     approve(body.response_url, emailAtt, user);
   } else {
@@ -185,6 +181,7 @@ async function approve(responseUrl, emailAtt, user) {
   console.log(`Sending to ${sendTo}`);
 
   try {
+    const ses = new AWS.SES();
     await ses.sendEmail({
       Source: process.env.SEND_FROM,
       Destination: {
@@ -232,11 +229,10 @@ async function respondToSlack(responseUrl, emailAtt, message, color) {
   };
 
   try {
-    return await request({
+    return await request.post({
       url: responseUrl,
       body: response,
-      json: true,
-      method: 'POST'
+      json: true
     });
   } catch (err) {
     console.error('Failed to respond to Slack: ', err);
@@ -245,15 +241,14 @@ async function respondToSlack(responseUrl, emailAtt, message, color) {
 
 async function errorToSlack(responseUrl, err) {
   try {
-    return await request({
+    return await request.post({
       url: responseUrl,
       body: {
         'response_type': 'ephemeral',
         'replace_original': false,
         'text': 'Error: ' + err.toString()
       },
-      json: true,
-      method: 'POST'
+      json: true
     });
   } catch (err) {
     console.error('Failed to send error to Slack: ', err);

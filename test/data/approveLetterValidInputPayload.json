@@ -1,0 +1,95 @@
+{
+    "type": "interactive_message",
+    "actions": [
+        {
+            "name": "approve",
+            "type": "button",
+            "value": "dca0de80-f043-4983-a007-cbc236f42dd1"
+        }
+    ],
+    "callback_id": "submit",
+    "team": {
+        "id": "T1LLWMDNC",
+        "domain": "ahvan"
+    },
+    "channel": {
+        "id": "D1M1WD8JZ",
+        "name": "directmessage"
+    },
+    "user": {
+        "id": "U1M1W67V5",
+        "name": "reilly"
+    },
+    "action_ts": "1526836921.559291",
+    "message_ts": "1526836913.000118",
+    "attachment_id": "2",
+    "token": "m9hZPeQZHv1pPWKRddbVqGJp",
+    "is_app_unfurl": false,
+    "original_message": {
+        "text": "",
+        "bot_id": "BAGQ1H6MN",
+        "attachments": [
+            {
+                "author_name": "Test McTesterson &lt;test@test.com&gt;",
+                "text": "To whom it may concern:\n\nI am writing to express my support for 1234 Abundant Avenue. This is an example sentence. \n\nThis project is worth your support because:\n\u2022 I want my friends and family to be able to live in West Point Grey, and they won't be able to do that if there aren't enough homes\n\n1234 Abundant Avenue deserves to be approved, but some things could be improved:\n\u2022 The project could have more family-friendly units\n\u2022 Building homes near homes shouldn't require a decision from council.\n\nIn short, council should approve this project.\n\nSincerely,\nTest McTesterson\n4567 Fake Street, Vancouver. V5T 0A1 ",
+                "pretext": "New submission",
+                "title": "In support of 1234 Abundant Avenue",
+                "id": 1,
+                "ts": 1526836914,
+                "fields": [
+                    {
+                        "title": "Registered w\/ NationBuilder",
+                        "value": "No",
+                        "short": false
+                    },
+                    {
+                        "title": "Recipients",
+                        "value": "<mailto:fake.email@icloud.com|fake.email@icloud.com>, <mailto:fake.email@gmail.com|fake.email@gmail.com>",
+                        "short": false
+                    }
+                ],
+                "fallback": "In support of 1234 Abundant Avenue"
+            },
+            {
+                "callback_id": "submit",
+                "fallback": "Your client does not support approving\/rejecting messages",
+                "id": 2,
+                "actions": [
+                    {
+                        "id": "1",
+                        "name": "approve",
+                        "text": "Approve",
+                        "type": "button",
+                        "value": "dca0de80-f043-4983-a007-cbc236f42dd1",
+                        "style": "primary",
+                        "confirm": {
+                            "text": "Are you sure you want to approve this message?",
+                            "title": "",
+                            "ok_text": "Yes",
+                            "dismiss_text": "Not right now"
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "name": "reject",
+                        "text": "Reject",
+                        "type": "button",
+                        "value": "",
+                        "style": "",
+                        "confirm": {
+                            "text": "Are you sure you want to reject this message?",
+                            "title": "",
+                            "ok_text": "Yes",
+                            "dismiss_text": "Not right now"
+                        }
+                    }
+                ]
+            }
+        ],
+        "type": "message",
+        "subtype": "bot_message",
+        "ts": "1526836913.000118"
+    },
+    "response_url": "https:\/\/hooks.slack.com\/actions\/T1LLWMDNC\/368090133719\/9DeNXQ6cie7f5J8s2gO3loyD",
+    "trigger_id": "366346746384.54710727760.35e433e69ac5695f3dcfddc3032b65f0"
+}

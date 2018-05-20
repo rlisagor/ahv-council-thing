@@ -45,8 +45,6 @@ describe('createLetter', () => {
       const requestParam = requestStub.firstCall.args[0];
       expect(requestParam.url).to.be.equal(process.env.SLACK_WEBHOOK_URL);
 
-      console.log(requestParam.body);
-      
       var parsedBody = requestParam.body;
       var expectedBody = readJsonFile('test/data/createLetterExpectedRequestBody.json');
 
@@ -58,8 +56,11 @@ describe('createLetter', () => {
   });
 
   it('fails when given a non-JSON body', () => {
+    // keep test output clean, avoid logging the failure details
+    var consoleStub = sinon.stub(console, 'log');
     var event = { headers: { "content-type": "application/json" }, body: "asdf" }
     return wrapped.run(event).then((response) => {
+      consoleStub.restore();
       expect(response.statusCode).to.be.equal(400);
       expect(response.body).to.be.equal("Bad request: request is not valid JSON");
     });

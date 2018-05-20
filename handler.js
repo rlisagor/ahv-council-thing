@@ -10,8 +10,6 @@ const qs = require('qs');
 const helper = require('./helper');
 const nationBuilder = require('./nationbuilder');
 
-const ses = new AWS.SES();
-
 const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
   {noEscape: true});
 const EMAIL_SEPARATOR = ', ';
@@ -153,7 +151,7 @@ module.exports.approveLetter = (event, _context, callback) => {
 
   const emailAtt = body.original_message.attachments[0];
   const user = body.user;
-
+  
   if (body.actions[0].name === 'approve') {
     approve(body.response_url, emailAtt, user);
   } else {
@@ -183,6 +181,7 @@ async function approve(responseUrl, emailAtt, user) {
   console.log(`Sending to ${sendTo}`);
 
   try {
+    const ses = new AWS.SES();
     await ses.sendEmail({
       Source: process.env.SEND_FROM,
       Destination: {
@@ -230,11 +229,10 @@ async function respondToSlack(responseUrl, emailAtt, message, color) {
   };
 
   try {
-    return await request({
+    return await request.post({
       url: responseUrl,
       body: response,
-      json: true,
-      method: 'POST'
+      json: true
     });
   } catch (err) {
     console.error('Failed to respond to Slack: ', err);
@@ -243,15 +241,14 @@ async function respondToSlack(responseUrl, emailAtt, message, color) {
 
 async function errorToSlack(responseUrl, err) {
   try {
-    return await request({
+    return await request.post({
       url: responseUrl,
       body: {
         'response_type': 'ephemeral',
         'replace_original': false,
         'text': 'Error: ' + err.toString()
       },
-      json: true,
-      method: 'POST'
+      json: true
     });
   } catch (err) {
     console.error('Failed to send error to Slack: ', err);

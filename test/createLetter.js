@@ -20,12 +20,12 @@ function readTextFile(fileName) {
   return fs.readFileSync(fileName).toString();
 }
 
-describe('createLetter', () => {
+describe('createLetter Integration Tests', () => {
   before((done) => {
     done();
   });
 
-  it('works when passed valid JSON', () => {
+  it('makes the expected request call to Slack', () => {
     const mockId = '00000000-0000-0000-0000-000000000000';
     const mockCurrentTime = new Date(2018,1,1);
     var event = { 

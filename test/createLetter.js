@@ -21,9 +21,6 @@ function readTextFile(fileName) {
 }
 
 describe('createLetter Integration Tests', () => {
-  before((done) => {
-    done();
-  });
 
   it('makes the expected request call to Slack', () => {
     const mockId = '00000000-0000-0000-0000-000000000000';

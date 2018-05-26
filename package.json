@@ -10,6 +10,7 @@
   "dependencies": {
     "handlebars": "^4.0.6",
     "he": "^1.1.1",
+    "moment": "^2.22.1",
     "qs": "^6.4.0",
     "request": "^2.80.0",
     "request-promise-native": "^1.0.5",

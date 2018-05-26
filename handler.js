@@ -9,10 +9,12 @@ const he = require('he');
 const qs = require('qs');
 const helper = require('./helper');
 const nationBuilder = require('./nationbuilder');
+const moment = require('moment');
 
 const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
-  {noEscape: true});
+  { noEscape: true });
 const EMAIL_SEPARATOR = ', ';
+const S3_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 module.exports.createLetter = async (event) => {
   const contentType = (event.headers['content-type'] ||
@@ -56,7 +58,7 @@ module.exports.createLetter = async (event) => {
       });
       nbStatus = 'Yes';
     } catch (err) {
-      console.error('Failed to register person with NationBuilder:',  err);
+      console.error('Failed to register person with NationBuilder:', err);
       nbStatus = 'Tried, but failed (see logs)';
     }
   }
@@ -69,7 +71,8 @@ module.exports.createLetter = async (event) => {
         title: submission.subject,
         author_name: `${name} <${submission.email}>`,
         text: submission.content,
-        ts: Math.round(Date.now() / 1000)
+        ts: Math.round(Date.now() / 1000),
+        fields: []
       },
       {
         fallback: 'Your client does not support approving/rejecting messages',
@@ -99,14 +102,6 @@ module.exports.createLetter = async (event) => {
     ],
   };
 
-  slackReq.attachments[0].fields = [
-    {
-      title: 'Registered w/ NationBuilder',
-      value: nbStatus,
-      short: false,
-    }
-  ];
-
   if (submission.recipients) {
     slackReq.attachments[0].fields.push({
       title: 'Recipients',
@@ -114,6 +109,18 @@ module.exports.createLetter = async (event) => {
       short: false
     });
   }
+
+  slackReq.attachments[0].fields.push({
+    title: 'Registered w/ NationBuilder',
+    value: nbStatus,
+    short: true,
+  });
+
+  slackReq.attachments[0].fields.push({
+    title: 'Project ID',
+    value: submission.projectId,
+    short: true
+  });
 
   await request.post({
     url: process.env.SLACK_WEBHOOK_URL,
@@ -151,7 +158,7 @@ module.exports.approveLetter = (event, _context, callback) => {
 
   const emailAtt = body.original_message.attachments[0];
   const user = body.user;
-  
+
   if (body.actions[0].name === 'approve') {
     approve(body.response_url, emailAtt, user);
   } else {
@@ -174,6 +181,8 @@ async function approve(responseUrl, emailAtt, user) {
   const recipientFields = emailAtt.fields.filter(f => f.title === 'Recipients');
   let sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => helper.extractEmailAddress(e));
 
+  const projectId = emailAtt.fields.filter(f => f.title === 'Project ID')[0].value;
+
   if (sendTo.length === 1 && sendTo[0] === 'author') {
     sendTo = [tmplContext.author_name];
   }
@@ -181,6 +190,8 @@ async function approve(responseUrl, emailAtt, user) {
   console.log(`Sending to ${sendTo}`);
 
   try {
+    let emailSubject = emailAtt.title;
+    let emailBody = EMAIL_TEMPLATE(tmplContext);
     const ses = new AWS.SES();
     await ses.sendEmail({
       Source: process.env.SEND_FROM,
@@ -190,16 +201,38 @@ async function approve(responseUrl, emailAtt, user) {
       ReplyToAddresses: [tmplContext.author_name],
       Message: {
         Subject: {
-          Data: emailAtt.title
+          Data: emailSubject
         },
         Body: {
           Text: {
-            Data: EMAIL_TEMPLATE(tmplContext),
+            Data: emailBody,
             Charset: 'UTF-8'
           }
         }
       }
     }).promise();
+
+    if (JSON.parse(process.env.LOG_JSON_TO_S3.toLowerCase())) {
+      const logEntry = {
+        projectid: projectId,
+        from: tmplContext.author_name,
+        to: sendTo,
+        subject: emailSubject,
+        body: emailBody,
+        approvedTimestampUTC: moment().format(S3_TIMESTAMP_FORMAT)
+      };
+
+      const s3 = new AWS.S3();
+      await s3.putObject({
+        Bucket: process.env.S3_LOGGING_BUCKET,
+        Key: `${projectId}-${uuid.v4()}.json`,
+        Body: JSON.stringify(logEntry)
+      }).promise();
+
+    } else {
+      console.log('S3 bucket and/or key not specified. Not logging to S3.');
+    }
+
   } catch (err) {
     return await errorToSlack(responseUrl, err);
   }

@@ -4,7 +4,7 @@
   "main": "handler.js",
   "scripts": {
     "lint": "eslint *.js",
-    "test": "sls invoke test -s dev",
+    "test": "sls invoke test -s automatedtests",
     "unit-tests-only": "mocha test/unitTests.js"
   },
   "dependencies": {

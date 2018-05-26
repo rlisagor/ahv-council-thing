@@ -14,12 +14,10 @@ let wrapped = mochaPlugin.getWrapper('approveLetter', '/handler.js', 'approveLet
 
 describe('approveLetter Integration Tests', () => {
 
-  let spy = sandbox.spy();
+  let sesSpy = sandbox.spy();
   beforeEach(function () {
-    spy = sandbox.spy();
-    AWS.mock('SES','sendEmail', spy);
-
-    //todo: mock up and test calls to Slack
+    sesSpy = sandbox.spy();
+    AWS.mock('SES','sendEmail', sesSpy);
   });
 
   afterEach(function () {
@@ -27,7 +25,7 @@ describe('approveLetter Integration Tests', () => {
     sandbox.restore();
   });
 
-  it('calls SES.sendEmail with the expected object', () => {
+  it('calls SES.sendEmail with the expected object', (done) => {
     let payload = fileHelper.readJsonFile('test/data/approveLetterValidInputPayload.json');
     let encodedPayload = encodeURIComponent(JSON.stringify(payload));
 
@@ -36,12 +34,13 @@ describe('approveLetter Integration Tests', () => {
       body: `payload=${encodedPayload}`
     }
 
-    return wrapped.run(event).then((response) => {
+     wrapped.run(event).then((response) => {
       expect(response).to.not.be.empty;
-      expect(spy.calledOnce).to.be.true;
-      const objectActuallyPassedToSES = spy.firstCall.args[0];
+      expect(sesSpy.calledOnce).to.be.true;
+      const objectActuallyPassedToSES = sesSpy.firstCall.args[0];
       const objectExpectedToBePassedToSES = fileHelper.readJsonFile('test/data/approveLetterValidSESParameter.json');
       expect(objectActuallyPassedToSES).to.deep.equal(objectExpectedToBePassedToSES);
+      done();
     });
   });
 });

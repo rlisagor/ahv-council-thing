@@ -8,14 +8,19 @@
             "ts": 1517472000,
             "fields": [
                 {
-                    "title": "Registered w/ NationBuilder",
-                    "value": "No",
-                    "short": false
-                },
-                {
                     "title": "Recipients",
                     "value": "fake.email@icloud.com, fake.email@gmail.com",
                     "short": false
+                },
+                {
+                    "title": "Registered w/ NationBuilder",
+                    "value": "No",
+                    "short": true
+                },
+                {
+                    "short": true,
+                    "title": "Project ID",
+                    "value": "exampleProject"
                 }
             ]
         },

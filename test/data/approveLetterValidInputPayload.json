@@ -38,14 +38,19 @@
                 "ts": 1526836914,
                 "fields": [
                     {
-                        "title": "Registered w\/ NationBuilder",
-                        "value": "No",
-                        "short": false
-                    },
-                    {
                         "title": "Recipients",
                         "value": "<mailto:fake.email@icloud.com|fake.email@icloud.com>, <mailto:fake.email@gmail.com|fake.email@gmail.com>",
                         "short": false
+                    },
+                    {
+                        "title": "Registered w\/ NationBuilder",
+                        "value": "No",
+                        "short": true
+                    },
+                    {
+                        "title": "Project ID",
+                        "value": "example1",
+                        "short": true
                     }
                 ],
                 "fallback": "In support of 1234 Abundant Avenue"

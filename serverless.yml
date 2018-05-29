@@ -13,6 +13,11 @@ provider:
       Action:
         - "ses:SendEmail"
       Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource: 
+        - arn:aws:s3:::${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}/*
 
 functions:
   createLetter:
@@ -31,3 +36,5 @@ functions:
           path: approve
           method: post
           private: false
+plugins:
+  - serverless-mocha-plugin

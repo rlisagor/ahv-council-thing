@@ -2,3 +2,6 @@ node_modules/
 .serverless/
 env.*.yml
 !env.example.yml
+!env.automatedtests.yml
+fakedata*.json
+.DS_Store

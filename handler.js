@@ -1,6 +1,6 @@
 'use strict';
 
-const uuidv4 = require('uuid/v4');
+const uuid = require('uuid');
 const request = require('request-promise-native');
 // @ts-ignore aws-sdk is already installed on AWS. Not installing locally to keep the build artifacts small
 const AWS = require('aws-sdk');
@@ -9,17 +9,16 @@ const he = require('he');
 const qs = require('qs');
 const helper = require('./helper');
 const nationBuilder = require('./nationbuilder');
-
-const ses = new AWS.SES();
+const moment = require('moment');
 
 const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
-  {noEscape: true});
+  { noEscape: true });
 const EMAIL_SEPARATOR = ', ';
+const S3_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 module.exports.createLetter = async (event) => {
   const contentType = (event.headers['content-type'] ||
     'application/x-www-form-urlencoded');
-
   let submission;
   if (contentType.match(/^application\/json\b/)) {
     try {
@@ -59,12 +58,12 @@ module.exports.createLetter = async (event) => {
       });
       nbStatus = 'Yes';
     } catch (err) {
-      console.error('Failed to register person with NationBuilder:',  err);
+      console.error('Failed to register person with NationBuilder:', err);
       nbStatus = 'Tried, but failed (see logs)';
     }
   }
 
-  const submissionId = uuidv4();
+  const submissionId = uuid.v4();
   const slackReq = {
     attachments: [
       {
@@ -72,7 +71,8 @@ module.exports.createLetter = async (event) => {
         title: submission.subject,
         author_name: `${name} <${submission.email}>`,
         text: submission.content,
-        ts: Math.round(Date.now() / 1000)
+        ts: Math.round(Date.now() / 1000),
+        fields: []
       },
       {
         fallback: 'Your client does not support approving/rejecting messages',
@@ -102,14 +102,6 @@ module.exports.createLetter = async (event) => {
     ],
   };
 
-  slackReq.attachments[0].fields = [
-    {
-      title: 'Registered w/ NationBuilder',
-      value: nbStatus,
-      short: false,
-    }
-  ];
-
   if (submission.recipients) {
     slackReq.attachments[0].fields.push({
       title: 'Recipients',
@@ -118,11 +110,22 @@ module.exports.createLetter = async (event) => {
     });
   }
 
-  await request({
+  slackReq.attachments[0].fields.push({
+    title: 'Registered w/ NationBuilder',
+    value: nbStatus,
+    short: true,
+  });
+
+  slackReq.attachments[0].fields.push({
+    title: 'Project ID',
+    value: submission.projectId,
+    short: true
+  });
+
+  await request.post({
     url: process.env.SLACK_WEBHOOK_URL,
     body: slackReq,
-    json: true,
-    method: 'POST'
+    json: true
   });
 
   return {
@@ -155,15 +158,16 @@ module.exports.approveLetter = (event, _context, callback) => {
 
   const emailAtt = body.original_message.attachments[0];
   const user = body.user;
+  const submissionId = body.actions[0].value;
 
   if (body.actions[0].name === 'approve') {
-    approve(body.response_url, emailAtt, user);
+    approve(body.response_url, emailAtt, user, submissionId);
   } else {
     reject(body.response_url, emailAtt, user);
   }
 };
 
-async function approve(responseUrl, emailAtt, user) {
+async function approve(responseUrl, emailAtt, user, submissionId) {
   // Slack replaces various things with HTML elements, so we must convert it
   // back for the email.
   const tmplContext = {};
@@ -178,6 +182,8 @@ async function approve(responseUrl, emailAtt, user) {
   const recipientFields = emailAtt.fields.filter(f => f.title === 'Recipients');
   let sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => helper.extractEmailAddress(e));
 
+  const projectId = emailAtt.fields.filter(f => f.title === 'Project ID')[0].value;
+
   if (sendTo.length === 1 && sendTo[0] === 'author') {
     sendTo = [tmplContext.author_name];
   }
@@ -185,6 +191,9 @@ async function approve(responseUrl, emailAtt, user) {
   console.log(`Sending to ${sendTo}`);
 
   try {
+    let emailSubject = emailAtt.title;
+    let emailBody = EMAIL_TEMPLATE(tmplContext);
+    const ses = new AWS.SES();
     await ses.sendEmail({
       Source: process.env.SEND_FROM,
       Destination: {
@@ -193,16 +202,38 @@ async function approve(responseUrl, emailAtt, user) {
       ReplyToAddresses: [tmplContext.author_name],
       Message: {
         Subject: {
-          Data: emailAtt.title
+          Data: emailSubject
         },
         Body: {
           Text: {
-            Data: EMAIL_TEMPLATE(tmplContext),
+            Data: emailBody,
             Charset: 'UTF-8'
           }
         }
       }
     }).promise();
+
+    if (process.env.S3_LOGGING_BUCKET.length > 0) {
+      const logEntry = {
+        projectid: projectId,
+        sender: tmplContext.author_name,
+        recipients: sendTo,
+        subject: emailSubject,
+        body: emailBody,
+        approvedTimestampUTC: moment().format(S3_TIMESTAMP_FORMAT)
+      };
+
+      const s3 = new AWS.S3();
+      await s3.putObject({
+        Bucket: process.env.S3_LOGGING_BUCKET,
+        Key: `letters/${projectId}-${submissionId}.json`,
+        Body: JSON.stringify(logEntry)
+      }).promise();
+
+    } else {
+      console.log('S3 bucket and/or key not specified. Not logging to S3.');
+    }
+
   } catch (err) {
     return await errorToSlack(responseUrl, err);
   }
@@ -232,11 +263,10 @@ async function respondToSlack(responseUrl, emailAtt, message, color) {
   };
 
   try {
-    return await request({
+    return await request.post({
       url: responseUrl,
       body: response,
-      json: true,
-      method: 'POST'
+      json: true
     });
   } catch (err) {
     console.error('Failed to respond to Slack: ', err);
@@ -245,15 +275,14 @@ async function respondToSlack(responseUrl, emailAtt, message, color) {
 
 async function errorToSlack(responseUrl, err) {
   try {
-    return await request({
+    return await request.post({
       url: responseUrl,
       body: {
         'response_type': 'ephemeral',
         'replace_original': false,
         'text': 'Error: ' + err.toString()
       },
-      json: true,
-      method: 'POST'
+      json: true
     });
   } catch (err) {
     console.error('Failed to send error to Slack: ', err);

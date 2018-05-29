@@ -158,15 +158,16 @@ module.exports.approveLetter = (event, _context, callback) => {
 
   const emailAtt = body.original_message.attachments[0];
   const user = body.user;
+  const submissionId = body.actions[0].value;
 
   if (body.actions[0].name === 'approve') {
-    approve(body.response_url, emailAtt, user);
+    approve(body.response_url, emailAtt, user, submissionId);
   } else {
     reject(body.response_url, emailAtt, user);
   }
 };
 
-async function approve(responseUrl, emailAtt, user) {
+async function approve(responseUrl, emailAtt, user, submissionId) {
   // Slack replaces various things with HTML elements, so we must convert it
   // back for the email.
   const tmplContext = {};
@@ -215,8 +216,8 @@ async function approve(responseUrl, emailAtt, user) {
     if (JSON.parse(process.env.LOG_JSON_TO_S3.toLowerCase())) {
       const logEntry = {
         projectid: projectId,
-        from: tmplContext.author_name,
-        to: sendTo,
+        sender: tmplContext.author_name,
+        recipients: sendTo,
         subject: emailSubject,
         body: emailBody,
         approvedTimestampUTC: moment().format(S3_TIMESTAMP_FORMAT)
@@ -225,7 +226,7 @@ async function approve(responseUrl, emailAtt, user) {
       const s3 = new AWS.S3();
       await s3.putObject({
         Bucket: process.env.S3_LOGGING_BUCKET,
-        Key: `${projectId}-${uuid.v4()}.json`,
+        Key: `${projectId}-${submissionId}.json`,
         Body: JSON.stringify(logEntry)
       }).promise();
 

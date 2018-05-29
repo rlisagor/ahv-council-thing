@@ -213,7 +213,7 @@ async function approve(responseUrl, emailAtt, user, submissionId) {
       }
     }).promise();
 
-    if (JSON.parse(process.env.LOG_JSON_TO_S3.toLowerCase())) {
+    if (process.env.S3_LOGGING_BUCKET.length > 0) {
       const logEntry = {
         projectid: projectId,
         sender: tmplContext.author_name,
@@ -226,7 +226,7 @@ async function approve(responseUrl, emailAtt, user, submissionId) {
       const s3 = new AWS.S3();
       await s3.putObject({
         Bucket: process.env.S3_LOGGING_BUCKET,
-        Key: `${projectId}-${submissionId}.json`,
+        Key: `letters/${projectId}-${submissionId}.json`,
         Body: JSON.stringify(logEntry)
       }).promise();
 

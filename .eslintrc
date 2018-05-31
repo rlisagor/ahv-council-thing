@@ -1,0 +1,26 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 9
+  },
+  "env": {
+    "amd": true,
+    "es6": true,
+    "node": true,
+    "mocha": true
+  },
+  "extends": "eslint:recommended",
+  "rules": {
+    "comma-dangle": ["warn", "only-multiline"],
+    "quotes": ["warn", "single"],
+    "no-undef": "warn",
+    "no-console": "off",
+    "no-unused-vars": ["warn", {
+      "varsIgnorePattern": "^_.*",
+      "argsIgnorePattern": "^_.*",
+      "args": "all"
+    }],
+    "no-trailing-spaces": ["warn", { "skipBlankLines": true }],
+    "semi": ["error", "always"],
+    "indent": ["error", 2]
+  }
+}

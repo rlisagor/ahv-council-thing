@@ -7,6 +7,7 @@
       form.serializeArray().forEach(function(field) {
         data[field.name] = field.value;
       });
+      data.recipients = ['test@example.com'];
       
       var button = $('#ahv-letter-submit');
       button.prop('disabled', true)

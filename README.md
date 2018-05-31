@@ -35,6 +35,7 @@ The system consists of several parts:
 - The form in NationBuilder (see [example](example.html))
 - Two AWS Lambda functions (`submit` and `approve`)
 - The Slack application
+- (Optional) An S3 bucket for logging. Because we log in a consistent JSON format, you can use [AWS Athena](https://aws.amazon.com/athena/) to query logs.
 
 The workflow:
 
@@ -44,3 +45,4 @@ The workflow:
 4. Someone from the group reads the submission and clicks "Approve"
 5. Slack sends a request to the `approve` Lambda function.
 6. The function uses AWS SES to send the email.
+7. If enabled, the function writes a JSON file containing the letter details to the S3 bucket.

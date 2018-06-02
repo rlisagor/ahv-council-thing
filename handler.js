@@ -194,11 +194,10 @@ async function approve(responseUrl, emailAtt, user, submissionId) {
     let emailSubject = emailAtt.title;
     let emailBody = EMAIL_TEMPLATE(tmplContext);
     const ses = new AWS.SES();
-    const emailOpts = {
+    await ses.sendEmail({
       Source: process.env.SEND_FROM,
       Destination: {
-        ToAddresses: sendTo,
-        CcAddresses: [tmplContext.author_name]
+        ToAddresses: sendTo
       },
       ReplyToAddresses: [tmplContext.author_name],
       Message: {
@@ -212,9 +211,7 @@ async function approve(responseUrl, emailAtt, user, submissionId) {
           }
         }
       }
-    }
-
-    await ses.sendEmail(emailOpts).promise();
+    }).promise();
 
     if (process.env.S3_LOGGING_BUCKET.length > 0) {
       const logEntry = {

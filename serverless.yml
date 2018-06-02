@@ -15,9 +15,21 @@ provider:
       Resource: "*"
     - Effect: "Allow"
       Action:
+        - "s3:CreateBucket"
+      Resource:
+        - arn:aws:s3:::${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}
+    - Effect: "Allow"
+      Action:
         - "s3:PutObject"
       Resource: 
         - arn:aws:s3:::${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}/*
+
+resources:
+  Resources:
+    S3LoggingBucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        BucketName: ${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}
 
 functions:
   createLetter:

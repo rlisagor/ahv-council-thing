@@ -25,9 +25,16 @@ provider:
         - arn:aws:s3:::${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}/*
 
 resources:
+  Conditions:
+    CreateS3Bucket: 
+      Fn::Not:
+        - Fn::Equals:
+          - ${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}
+          - ""
   Resources:
     S3LoggingBucket:
       Type: "AWS::S3::Bucket"
+      Condition: "CreateS3Bucket"
       Properties:
         BucketName: ${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}
 

@@ -4,6 +4,9 @@
         "ToAddresses": [
             "fake.email@icloud.com",
             "fake.email@gmail.com"
+        ],
+        "CcAddresses": [
+            "Test McTesterson <test@test.com>"
         ]
     },
     "ReplyToAddresses": [

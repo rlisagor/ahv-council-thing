@@ -27,6 +27,7 @@ This thing mails letters to City Council.
     - Enable interactive messages for the Slack app. Copy the URL of the `approve` function into the interactive messages request URL.
     - Copy the URL of the `submit` function into the code that is placed into NationBuilder.
 7. Insert the code snippets into NationBuilder (see [example](example.html))
+8. (Optional) Set up a Slack slash command to point to the `slash` endpoint URL.
 
 ## How it works
 

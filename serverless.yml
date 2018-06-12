@@ -15,9 +15,39 @@ provider:
       Resource: "*"
     - Effect: "Allow"
       Action:
+        - "s3:GetBucketLocation"
+        - "s3:GetObject"
+        - "s3:ListBucket"
+        - "s3:ListBucketMultipartUploads"
+        - "s3:ListMultipartUploadParts"
+        - "s3:AbortMultipartUpload"
         - "s3:PutObject"
       Resource: 
+        - arn:aws:s3:::${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET} 
         - arn:aws:s3:::${file(env.${opt:stage}.yml):S3_LOGGING_BUCKET}/*
+    - Effect: "Allow"
+      Action:
+        - "glue:GetTable"
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - "athena:*"
+      Resource: "*"
+    - Effect: 'Allow'
+      Action:
+        - "sns:Publish"
+      Resource:
+        - ${self:custom.ahvSlashTaskQueue}
+
+custom:
+  ahvSlashTaskQueue:
+    Fn::Join:
+      - ":"
+      - 
+        - "arn:aws:sns"
+        - Ref: AWS::Region
+        - Ref: AWS::AccountId
+        - ahvSlashTasks
 
 resources:
   Conditions:
@@ -50,5 +80,22 @@ functions:
           path: approve
           method: post
           private: false
+
+  slash:
+    handler: handler.slash
+    events:
+      - http:
+          path: slash
+          method: post
+          private: false
+    environment:
+      SLASH_TOPIC: ${self:custom.ahvSlashTaskQueue}
+
+  processSlashCommand:
+    handler: handler.processSlashCommand
+    events:
+      - sns: ahvSlashTasks
+    timeout: 180
+
 plugins:
   - serverless-mocha-plugin

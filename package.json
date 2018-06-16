@@ -15,6 +15,8 @@
     "request": "^2.80.0",
     "request-promise-native": "^1.0.5",
     "serverless": "^1.27.3",
+    "sqlstring": "^2.3.1",
+    "table": "^4.0.3",
     "uuid": "^3.0.1"
   },
   "devDependencies": {

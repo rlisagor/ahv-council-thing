@@ -360,9 +360,9 @@ function slashUsage(command) {
     `Usage: \`${command} command\``,
     '',
     'Commands:',
-    '• `stats [<project>]`: prints out the number of letters sent in each campaign (or specific given campaign)',
-    '• `leaderboard`: prints out the 10 most prolific letter authors',
-    '• `author <name or part of name>`: prints out the list of letter subjects the given author has written about',
+    '• `stats [<project>]`: print out the number of letters sent in each campaign (or specific given campaign)',
+    '• `leaderboard`: print out the 10 most prolific letter authors',
+    '• `author <name or part of name>`: list the subjects of the letters the given author has written',
     '• `query <SQL query>`: run the given SQL query and print out the results',
   ].join('\n');
 }

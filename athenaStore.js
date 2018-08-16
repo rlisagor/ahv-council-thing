@@ -14,7 +14,7 @@ class AthenaLetterStore {
   }
 
   async runQuery(query) {
-    console.log("Running Athena query:", query);
+    console.log('Running Athena query:', query);
     const queryID = uuid.v4();
 
     const startRes = await this.athena.startQueryExecution({
@@ -34,7 +34,7 @@ class AthenaLetterStore {
         QueryExecutionId: startRes.QueryExecutionId,
       }).promise();
 
-      console.log("State is: ", res.QueryExecution.Status.State);
+      console.log('State is: ', res.QueryExecution.Status.State);
       if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(res.QueryExecution.Status.State)) {
         break;
       }

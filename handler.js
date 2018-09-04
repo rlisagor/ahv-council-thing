@@ -19,53 +19,114 @@ const EMAIL_SEPARATOR = ', ';
 const S3_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 module.exports.createLetter = async (event) => {
-  const contentType = (event.headers['content-type'] ||
-    'application/x-www-form-urlencoded');
+  const submissionId = uuid.v4();
+  const contentType = (event.headers['content-type'] || 'application/x-www-form-urlencoded');
+
   let submission;
-  if (contentType.match(/^application\/json\b/)) {
-    try {
-      submission = JSON.parse(event.body);
-    } catch (err) {
-      console.log(err);
-      return badRequest('request is not valid JSON', true);
-    }
-  } else if (contentType.match(/^application\/x-www-form-urlencoded\b/)) {
-    try {
-      submission = qs.parse(event.body);
-    } catch (err) {
-      console.log(err);
-      return badRequest('request is not a valid form-encoded string', true);
-    }
-  } else {
-    return badRequest('unknown content type', true);
+  try {
+    submission = parseSubmission(contentType, event.body);
+  } catch (error) {
+    return badRequestResponse(error, true);
   }
 
-  let name, lastName, firstName;
+  let { name, firstName, lastName } = parseNameFields(submission);
+
+  let nbStatus = 'No';
+  if (submission.join) {
+    nbStatus = await registerWithNationBuilder(firstName, lastName, submission, nbStatus);
+  }
+  
+  await sendLetterToSlack(submission, submissionId, name, nbStatus);
+
+  return successResponse(submissionId);
+};
+
+module.exports.approveLetter = (event, _context, callback) => {
+  let body;
+  try {
+    body = JSON.parse(decodeURIComponent(event.body.substr(8).replace(/\+/g, ' ')));
+  } catch (err) {
+    return callback(null, badRequestResponse('invalid request format'));
+  }
+
+  if (body.token !== process.env.SLACK_VERIFICATION_TOKEN) {
+    return callback(null, badRequestResponse(callback, 'incorrect validation token'));
+  }
+
+  // Respond right away, will send update later via response_url
+  callback(null, {
+    statusCode: 200
+  });
+
+  const letterSlackAttachment = htmlDecodeStringsInMap(body.original_message.attachments[0]);
+  const user = body.user;
+  const submissionId = body.actions[0].value;
+
+  if (body.actions[0].name === 'approve') {
+    approveLetter(body.response_url, letterSlackAttachment, user, submissionId);
+  } else {
+    rejectLetter(body.response_url, letterSlackAttachment, user);
+  }
+};
+
+async function sendLetterToSlack(submission, submissionId, name, nbStatus) {
+  const slackReq = generateSlackRequest(submission, submissionId, name, nbStatus);
+  await request.post({
+    url: process.env.SLACK_WEBHOOK_URL,
+    body: slackReq,
+    json: true
+  });
+}
+
+function successResponse(submissionId) {
+  return {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    },
+    body: JSON.stringify({
+      id: submissionId
+    }),
+  };
+}
+
+function parseNameFields(submission) {
+  let name, firstName, lastName;
   if (submission.name) {
     name = submission.name;
     [firstName, lastName] = helper.splitFullName(name);
-  } else {
+  }
+  else {
     name = `${submission.first_name} ${submission.last_name}`;
     firstName = submission.first_name;
     lastName = submission.last_name;
   }
+  return { name, firstName, lastName };
+}
 
-  let nbStatus = 'No';
-  if (submission.join) {
+function parseSubmission(contentType, eventBody) {
+  let parsedSubmission;
+  if (contentType.match(/^application\/json\b/)) {
     try {
-      await nationBuilder.registerPerson({
-        first_name: firstName,
-        last_name: lastName,
-        email: submission.email,
-      });
-      nbStatus = 'Yes';
+      parsedSubmission = JSON.parse(eventBody);
     } catch (err) {
-      console.error('Failed to register person with NationBuilder:', err);
-      nbStatus = 'Tried, but failed (see logs)';
+      console.log(err);
+      throw 'request is not valid JSON';
     }
+  } else if (contentType.match(/^application\/x-www-form-urlencoded\b/)) {
+    try {
+      parsedSubmission = qs.parse(eventBody);
+    } catch (err) {
+      console.log(err);
+      throw 'request is not a valid form-encoded string';
+    }
+  } else {
+    throw 'unknown content type';
   }
+  return parsedSubmission;
+}
 
-  const submissionId = uuid.v4();
+function generateSlackRequest(submission, submissionId, name, nbStatus) {
   const slackReq = {
     attachments: [
       {
@@ -103,7 +164,6 @@ module.exports.createLetter = async (event) => {
       }
     ],
   };
-
   if (submission.recipients) {
     slackReq.attachments[0].fields.push({
       title: 'Recipients',
@@ -111,130 +171,54 @@ module.exports.createLetter = async (event) => {
       short: false
     });
   }
-
   slackReq.attachments[0].fields.push({
     title: 'Registered w/ NationBuilder',
     value: nbStatus,
     short: true,
   });
-
   slackReq.attachments[0].fields.push({
     title: 'Project ID',
     value: submission.projectId,
     short: true
   });
+  return slackReq;
+}
 
-  await request.post({
-    url: process.env.SLACK_WEBHOOK_URL,
-    body: slackReq,
-    json: true
-  });
-
-  return {
-    statusCode: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: JSON.stringify({
-      id: submissionId
-    }),
-  };
-};
-
-module.exports.approveLetter = (event, _context, callback) => {
-  let body;
+async function registerWithNationBuilder(firstName, lastName, submission, nbStatus) {
   try {
-    body = JSON.parse(decodeURIComponent(event.body.substr(8).replace(/\+/g, ' ')));
-  } catch (err) {
-    return callback(null, badRequest('invalid request format'));
+    await nationBuilder.registerPerson({
+      first_name: firstName,
+      last_name: lastName,
+      email: submission.email,
+    });
+    nbStatus = 'Yes';
   }
-
-  if (body.token !== process.env.SLACK_VERIFICATION_TOKEN) {
-    return callback(null, badRequest(callback, 'incorrect validation token'));
+  catch (err) {
+    console.error('Failed to register person with NationBuilder:', err);
+    nbStatus = 'Tried, but failed (see logs)';
   }
+  return nbStatus;
+}
 
-  // Respond right away, will send update later via response_url
-  callback(null, {
-    statusCode: 200
-  });
-
-  const emailAtt = body.original_message.attachments[0];
-  const user = body.user;
-  const submissionId = body.actions[0].value;
-
-  if (body.actions[0].name === 'approve') {
-    approve(body.response_url, emailAtt, user, submissionId);
-  } else {
-    reject(body.response_url, emailAtt, user);
-  }
-};
-
-async function approve(responseUrl, emailAtt, user, submissionId) {
-  // Slack replaces various things with HTML elements, so we must convert it
-  // back for the email.
-  const tmplContext = {};
-  for (const k in emailAtt) {
-    if (typeof emailAtt[k] === 'string') {
-      tmplContext[k] = he.decode(emailAtt[k]);
-    } else {
-      tmplContext[k] = emailAtt[k];
-    }
-  }
-
-  const recipientFields = emailAtt.fields.filter(f => f.title === 'Recipients');
+async function approveLetter(responseUrl, letter, user, submissionId) {
+  const recipientFields = letter.fields.filter(f => f.title === 'Recipients');
   let sendTo = recipientFields[0].value.split(EMAIL_SEPARATOR).map(e => helper.extractEmailAddress(e));
 
-  const projectId = emailAtt.fields.filter(f => f.title === 'Project ID')[0].value;
+  const projectId = letter.fields.filter(f => f.title === 'Project ID')[0].value;
 
   if (sendTo.length === 1 && sendTo[0] === 'author') {
-    sendTo = [tmplContext.author_name];
+    sendTo = [letter.author_name];
   }
 
   console.log(`Sending to ${sendTo}`);
 
   try {
-    let emailSubject = emailAtt.title;
-    let emailBody = EMAIL_TEMPLATE(tmplContext);
-    const ses = new AWS.SES();
-    const emailOpts = {
-      Source: process.env.SEND_FROM,
-      Destination: {
-        ToAddresses: sendTo,
-        CcAddresses: [tmplContext.author_name]
-      },
-      ReplyToAddresses: [tmplContext.author_name],
-      Message: {
-        Subject: {
-          Data: emailSubject
-        },
-        Body: {
-          Text: {
-            Data: emailBody,
-            Charset: 'UTF-8'
-          }
-        }
-      }
-    };
-
-    await ses.sendEmail(emailOpts).promise();
+    let emailSubject = letter.title;
+    let emailBody = EMAIL_TEMPLATE(letter);
+    await sendLetterUsingSES(sendTo, letter, emailSubject, emailBody);
 
     if (process.env.S3_LOGGING_BUCKET.length > 0) {
-      const logEntry = {
-        projectid: projectId,
-        sender: tmplContext.author_name,
-        recipients: sendTo,
-        subject: emailSubject,
-        body: emailBody,
-        approvedTimestampUTC: moment().format(S3_TIMESTAMP_FORMAT)
-      };
-
-      const s3 = new AWS.S3();
-      await s3.putObject({
-        Bucket: process.env.S3_LOGGING_BUCKET,
-        Key: `letters/${projectId}-${submissionId}.json`,
-        Body: JSON.stringify(logEntry)
-      }).promise();
-
+      await logLetterToS3(projectId, letter, sendTo, emailSubject, emailBody, submissionId);
     } else {
       console.log('S3 bucket and/or key not specified. Not logging to S3.');
     }
@@ -244,10 +228,64 @@ async function approve(responseUrl, emailAtt, user, submissionId) {
   }
 
   const message = `:white_check_mark: Approved by <@${user.id}|${user.name}>`;
-  return await respondToSlack(responseUrl, emailAtt, message, 'good');
+  return await respondToSlack(responseUrl, letter, message, 'good');
 }
 
-async function reject(responseUrl, emailAtt, user) {
+async function logLetterToS3(projectId, letter, sendTo, emailSubject, emailBody, submissionId) {
+  const logEntry = {
+    projectid: projectId,
+    sender: letter.author_name,
+    recipients: sendTo,
+    subject: emailSubject,
+    body: emailBody,
+    approvedTimestampUTC: moment().format(S3_TIMESTAMP_FORMAT)
+  };
+  const s3 = new AWS.S3();
+  await s3.putObject({
+    Bucket: process.env.S3_LOGGING_BUCKET,
+    Key: `letters/${projectId}-${submissionId}.json`,
+    Body: JSON.stringify(logEntry)
+  }).promise();
+}
+
+async function sendLetterUsingSES(sendTo, letter, emailSubject, emailBody) {
+  const ses = new AWS.SES();
+  const emailOpts = {
+    Source: process.env.SEND_FROM,
+    Destination: {
+      ToAddresses: sendTo,
+      CcAddresses: [letter.author_name]
+    },
+    ReplyToAddresses: [letter.author_name],
+    Message: {
+      Subject: {
+        Data: emailSubject
+      },
+      Body: {
+        Text: {
+          Data: emailBody,
+          Charset: 'UTF-8'
+        }
+      }
+    }
+  };
+  await ses.sendEmail(emailOpts).promise();
+}
+
+function htmlDecodeStringsInMap(emailAsSlackAttachment) {
+  const email = {};
+  for (const k in emailAsSlackAttachment) {
+    if (typeof emailAsSlackAttachment[k] === 'string') {
+      email[k] = he.decode(emailAsSlackAttachment[k]);
+    }
+    else {
+      email[k] = emailAsSlackAttachment[k];
+    }
+  }
+  return email;
+}
+
+async function rejectLetter(responseUrl, emailAtt, user) {
   const message = `:x: Rejected by <@${user.id}|${user.name}>`;
   return await respondToSlack(responseUrl, emailAtt, message, 'danger');
 }
@@ -257,11 +295,11 @@ module.exports.slash = async (event) => {
   try {
     body = qs.parse(event.body);
   } catch (err) {
-    return badRequest('request is not a valid form-encoded string');
+    return badRequestResponse('request is not a valid form-encoded string');
   }
 
   if (body.token !== process.env.SLACK_VERIFICATION_TOKEN) {
-    return badRequest('incorrect validation token');
+    return badRequestResponse('incorrect validation token');
   }
 
   await publishToSNS(process.env.SLASH_TOPIC, body);
@@ -417,7 +455,7 @@ async function errorToSlack(responseUrl, err) {
   }
 }
 
-function badRequest(message, cors) {
+function badRequestResponse(message, cors) {
   const log = `Bad request: ${message}`;
   console.log(log);
 

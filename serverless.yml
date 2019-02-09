@@ -65,7 +65,7 @@ resources:
 
 functions:
   createLetter:
-    handler: createLetter.entryPoint
+    handler: src/createLetter.entryPoint
     events:
       - http:
           path: submit
@@ -74,7 +74,7 @@ functions:
           cors: true
 
   approveLetter:
-    handler: approveLetter.entryPoint
+    handler: src/approveLetter.entryPoint
     events:
       - http:
           path: approve
@@ -82,7 +82,7 @@ functions:
           private: false
 
   slash:
-    handler: slash.invokeSlashCommand
+    handler: src/slash.invokeSlashCommand
     events:
       - http:
           path: slash
@@ -92,7 +92,7 @@ functions:
       SLASH_TOPIC: ${self:custom.ahvSlashTaskQueue}
 
   processSlashCommand:
-    handler: slash.processSlashCommand
+    handler: src/slash.processSlashCommand
     events:
       - sns: ahvSlashTasks
     timeout: 180

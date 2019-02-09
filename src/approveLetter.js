@@ -13,8 +13,6 @@ const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
 const EMAIL_SEPARATOR = ', ';
 const S3_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
-
-
 module.exports.entryPoint = (event, _context, callback) => {
     let body;
     try {

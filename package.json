@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "handler.js",
   "scripts": {
-    "lint": "eslint *.js",
+    "lint": "eslint src test --ext .js",
     "test": "sls invoke test -s automatedtests",
     "unit-tests-only": "mocha test/unitTests.js"
   },

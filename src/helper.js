@@ -41,7 +41,7 @@ exports.badRequestResponse =  function(message, cors) {
   }
 
   return result;
-}
+};
 
 exports.errorToSlack = async function(responseUrl, err) {
   try {
@@ -57,4 +57,4 @@ exports.errorToSlack = async function(responseUrl, err) {
   } catch (err) {
     console.error('Failed to send error to Slack: ', err);
   }
-}
+};

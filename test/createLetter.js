@@ -8,7 +8,7 @@ const sandbox = require('sinon').createSandbox();;
 const expect = mochaPlugin.chai.expect;
 const request = require('request-promise-native');
 const uuid = require('uuid');
-let wrapped = mochaPlugin.getWrapper('createLetter', '/handler.js', 'createLetter');
+let wrapped = mochaPlugin.getWrapper('createLetter', '/createLetter.js', 'entryPoint');
 const fileHelper = require('./fileHelper');
 
 

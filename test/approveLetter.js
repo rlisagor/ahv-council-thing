@@ -10,7 +10,7 @@ const request = require('request-promise-native');
 const AWS = require('aws-sdk-mock');
 const fileHelper = require('./fileHelper');
 
-let wrapped = mochaPlugin.getWrapper('approveLetter', '/handler.js', 'approveLetter');
+let wrapped = mochaPlugin.getWrapper('approveLetter', '/approveLetter.js', 'entryPoint');
 
 describe('approveLetter Integration Tests', () => {
 

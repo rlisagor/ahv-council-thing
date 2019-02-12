@@ -1,5 +1,5 @@
 var assert = require('assert');
-var helper = require('../helper');
+var helper = require('../src/helper');
 
 
 describe('helper.extractEmailAddress()', function () {

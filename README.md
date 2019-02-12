@@ -34,9 +34,9 @@ This thing mails letters to City Council.
 The system consists of several parts:
 
 - The form in NationBuilder (see [example](example.html))
-- Two AWS Lambda functions (`submit` and `approve`)
+- 4 AWS Lambda functions (`submit`, `approve`, `slash`, and `processSlashCommand`)
 - The Slack application
-- (Optional) An S3 bucket for logging. Because we log in a consistent JSON format, you can use [AWS Athena](https://aws.amazon.com/athena/) to query logs.
+- (Optional) An S3 bucket for logging. Because we log in a consistent JSON format, you can use [AWS Athena](https://aws.amazon.com/athena/) to query logs. We provide a Slack slash command to do this.
 
 The workflow:
 

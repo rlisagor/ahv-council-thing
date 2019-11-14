@@ -6,6 +6,7 @@ const AWS = require('aws-sdk');
 const Handlebars = require('handlebars');
 const he = require('he');
 const helper = require('./helper');
+const AwsWrapper = require('./awsWrapper');
 const moment = require('moment');
 
 const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
@@ -90,7 +91,6 @@ async function logLetterToS3(projectId, letter, sendTo, emailSubject, emailBody,
 }
 
 async function sendLetterUsingSES(sendTo, letter, emailSubject, emailBody) {
-  const ses = new AWS.SES();
   const emailOpts = {
     Source: process.env.SEND_FROM,
     Destination: {
@@ -110,7 +110,7 @@ async function sendLetterUsingSES(sendTo, letter, emailSubject, emailBody) {
       }
     }
   };
-  await ses.sendEmail(emailOpts).promise();
+  await AwsWrapper.SendEmail(emailOpts);
 }
 
 function htmlDecodeStringsInMap(emailAsSlackAttachment) {

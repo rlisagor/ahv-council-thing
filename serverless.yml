@@ -47,7 +47,7 @@ custom:
         - "arn:aws:sns"
         - Ref: AWS::Region
         - Ref: AWS::AccountId
-        - ahvSlashTasks
+        - ahvSlashTasks-${opt:stage}
 
 resources:
   Conditions:
@@ -94,7 +94,7 @@ functions:
   processSlashCommand:
     handler: src/slash.processSlashCommand
     events:
-      - sns: ahvSlashTasks
+      - sns: ahvSlashTasks-${opt:stage}
     timeout: 180
 
 plugins:

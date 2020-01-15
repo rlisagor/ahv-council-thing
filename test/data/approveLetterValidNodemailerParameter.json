@@ -1,5 +1,6 @@
 {
     "from": "Test McTesterson <test@test.com>",
+    "sender": "Test McTesterson <test@test.com>",
     "to": [
         "fake.email@icloud.com",
         "fake.email@gmail.com"

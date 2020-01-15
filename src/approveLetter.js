@@ -90,7 +90,8 @@ async function logLetterToS3(projectId, letter, sendTo, emailSubject, emailBody,
 
 async function sendLetter(sendTo, letter, emailSubject, emailBody) {
   const emailOpts = {
-    from: process.env.SEND_FROM,
+    from: process.env.SEND_FROM_AUTHOR === 'true' ? letter.author_name : process.env.SEND_FROM,
+    sender: process.env.SEND_FROM,
     to: sendTo,
     cc: [letter.author_name],
     subject: emailSubject,

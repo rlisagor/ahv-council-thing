@@ -5,3 +5,4 @@ env.*.yml
 !env.automatedtests.yml
 fakedata*.json
 .DS_Store
+tmp/

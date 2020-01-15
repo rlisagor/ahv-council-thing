@@ -100,3 +100,11 @@ functions:
 
 plugins:
   - serverless-mocha-plugin
+
+package:
+  exclude:
+    - tmp/**
+    - env.*.yml
+    - athena-table.sql
+  include:
+    - env.${opt:stage}.yml

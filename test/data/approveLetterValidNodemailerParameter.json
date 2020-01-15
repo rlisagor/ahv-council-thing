@@ -1,0 +1,12 @@
+{
+    "from": "Test McTesterson <test@test.com>",
+    "to": [
+        "fake.email@icloud.com",
+        "fake.email@gmail.com"
+    ],
+    "cc": [
+        "Test McTesterson <test@test.com>"
+    ],
+    "subject": "In support of 1234 Abundant Avenue",
+    "text": "The following message was sent through the Abundant Housing Vancouver website\n(http://www.abundanthousingvancouver.com/) on behalf of Test McTesterson <test@test.com>.\n\n--------------------\n\nTo whom it may concern:\n\nI am writing to express my support for 1234 Abundant Avenue. This is an example sentence. \n\nThis project is worth your support because:\n• I want my friends and family to be able to live in West Point Grey, and they won't be able to do that if there aren't enough homes\n\n1234 Abundant Avenue deserves to be approved, but some things could be improved:\n• The project could have more family-friendly units\n• Building homes near homes shouldn't require a decision from council.\n\nIn short, council should approve this project.\n\nSincerely,\nTest McTesterson\n4567 Fake Street, Vancouver. V5T 0A1 \n"
+}

@@ -6,7 +6,7 @@ const AWS = require('aws-sdk');
 const Handlebars = require('handlebars');
 const he = require('he');
 const helper = require('./helper');
-const AwsWrapper = require('./awsWrapper');
+const ProviderWrapper = require('./providerWrapper');
 const moment = require('moment');
 
 const EMAIL_TEMPLATE = Handlebars.compile(process.env.EMAIL_TEMPLATE,
@@ -52,12 +52,10 @@ async function approveLetter(responseUrl, letter, user, submissionId) {
     sendTo = [letter.author_name];
   }
 
-  console.log(`Sending to ${sendTo}`);
-
   try {
     let emailSubject = letter.title;
     let emailBody = EMAIL_TEMPLATE(letter);
-    await sendLetterUsingSES(sendTo, letter, emailSubject, emailBody);
+    await sendLetter(sendTo, letter, emailSubject, emailBody);
 
     if (process.env.S3_LOGGING_BUCKET.length > 0) {
       await logLetterToS3(projectId, letter, sendTo, emailSubject, emailBody, submissionId);
@@ -90,27 +88,17 @@ async function logLetterToS3(projectId, letter, sendTo, emailSubject, emailBody,
   }).promise();
 }
 
-async function sendLetterUsingSES(sendTo, letter, emailSubject, emailBody) {
+async function sendLetter(sendTo, letter, emailSubject, emailBody) {
   const emailOpts = {
-    Source: process.env.SEND_FROM,
-    Destination: {
-      ToAddresses: sendTo,
-      CcAddresses: [letter.author_name]
-    },
-    ReplyToAddresses: [letter.author_name],
-    Message: {
-      Subject: {
-        Data: emailSubject
-      },
-      Body: {
-        Text: {
-          Data: emailBody,
-          Charset: 'UTF-8'
-        }
-      }
-    }
+    from: process.env.SEND_FROM_AUTHOR === 'true' ? letter.author_name : process.env.SEND_FROM,
+    sender: process.env.SEND_FROM,
+    to: sendTo,
+    cc: [letter.author_name],
+    subject: emailSubject,
+    text: emailBody,
   };
-  await AwsWrapper.SendEmail(emailOpts);
+  console.log(`Sending: ${JSON.stringify(emailOpts, undefined, '  ')}`);
+  await ProviderWrapper.sendEmail(emailOpts);
 }
 
 function htmlDecodeStringsInMap(emailAsSlackAttachment) {

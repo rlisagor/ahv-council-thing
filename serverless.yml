@@ -12,6 +12,7 @@ provider:
     - Effect: "Allow"
       Action:
         - "ses:SendEmail"
+        - "ses:SendRawEmail"
       Resource: "*"
     - Effect: "Allow"
       Action:
@@ -47,7 +48,7 @@ custom:
         - "arn:aws:sns"
         - Ref: AWS::Region
         - Ref: AWS::AccountId
-        - ahvSlashTasks
+        - ahvSlashTasks-${opt:stage}
 
 resources:
   Conditions:
@@ -94,8 +95,16 @@ functions:
   processSlashCommand:
     handler: src/slash.processSlashCommand
     events:
-      - sns: ahvSlashTasks
+      - sns: ahvSlashTasks-${opt:stage}
     timeout: 180
 
 plugins:
   - serverless-mocha-plugin
+
+package:
+  exclude:
+    - tmp/**
+    - env.*.yml
+    - athena-table.sql
+  include:
+    - env.${opt:stage}.yml

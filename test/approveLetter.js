@@ -8,7 +8,7 @@ const request = require('request-promise-native');
 const sinon = require('sinon');
 const expect = mochaPlugin.chai.expect;
 const fileHelper = require('./fileHelper');
-const AwsWrapper = require('../src/awsWrapper');
+const ProviderWrapper = require('../src/providerWrapper');
 
 let wrapped = mochaPlugin.getWrapper('approveLetter', '/src/approveLetter.js', 'entryPoint');
 
@@ -17,7 +17,7 @@ describe('approveLetter Integration Tests', () => {
 
   beforeEach(function () {
     sendEmailFake = sinon.fake.throws('uh oh');
-    sinon.replace(AwsWrapper, 'SendEmail', sendEmailFake);
+    sinon.replace(ProviderWrapper, 'sendEmail', sendEmailFake);
     sinon.replace(request, 'post', sinon.fake());
   });
 
@@ -38,7 +38,7 @@ describe('approveLetter Integration Tests', () => {
       expect(response).to.not.be.empty;
       expect(sendEmailFake.calledOnce).to.be.true;
       const objectActuallyPassedToSES = sendEmailFake.firstCall.args[0];
-      const objectExpectedToBePassedToSES = fileHelper.readJsonFile('test/data/approveLetterValidSESParameter.json');
+      const objectExpectedToBePassedToSES = fileHelper.readJsonFile('test/data/approveLetterValidNodemailerParameter.json');
       expect(objectActuallyPassedToSES).to.deep.equal(objectExpectedToBePassedToSES);
       done();
     });

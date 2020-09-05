@@ -8,7 +8,7 @@
     "unit-tests-only": "mocha test/unitTests.js"
   },
   "dependencies": {
-    "handlebars": "^4.5.1",
+    "handlebars": "^4.5.3",
     "he": "^1.1.1",
     "moment": "^2.22.2",
     "nodemailer": "^6.4.2",

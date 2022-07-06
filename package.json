@@ -10,7 +10,7 @@
   "dependencies": {
     "handlebars": "^4.5.3",
     "he": "^1.1.1",
-    "moment": "^2.22.2",
+    "moment": "^2.29.4",
     "nodemailer": "^6.4.2",
     "nodemailer-mailgun-transport": "^2.0.0",
     "qs": "^6.4.0",

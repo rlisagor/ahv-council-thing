@@ -8,7 +8,7 @@
     "unit-tests-only": "mocha test/unitTests.js"
   },
   "dependencies": {
-    "handlebars": "^4.5.3",
+    "handlebars": "^4.7.7",
     "he": "^1.1.1",
     "moment": "^2.22.2",
     "nodemailer": "^6.4.2",
@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "eslint": "^5.3.0",
-    "mocha": "^6.2.0",
+    "mocha": "^6.2.3",
     "serverless": "^1.57.0",
     "serverless-mocha-plugin": "^1.11.0",
     "sinon": "^7.5.0"
